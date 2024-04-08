@@ -3,6 +3,8 @@ import java.util.Iterator;
 PImage frog; // 青蛙的图像
 PImage lilyPad; // 荷叶的图像
 PImage fly; // 蒼蠅的图像
+PImage snake; // 蒼蠅的图像
+PImage snake_flipped; // 蒼蠅的图像
 PImage startScreen; // 开始画面的图像
 PImage ruleScreen; // 规则页面的图像
 PImage gameOverScreen; // 游戏结束画面图像
@@ -90,12 +92,29 @@ ArrayList<Fly> flies;
 int numberOfFlies = 14; // 蒼蠅的数量
 int removedFliesCount = 0;
 
-enum DeathReason {
-    DROWNED, 
-    EATEN_BY_SNAKE,
-    RIP
+class Snake {
+    float x, y;
+    float speed;
+
+    Snake(float x, float y, float speed) {
+        this.x = x;
+        this.y = y;
+        this.speed = speed;
+    }
+
+    void display() {
+        if(speed > 0) image(snake, x, y);
+        else image(snake_flipped, x, y);
+    }
+
+    void move() {
+        x += speed;
+        // 如果荷叶移动到屏幕外，它会从另一边出现
+        if (x > width) x = -lilyPad.width;
+        if (x < - lilyPad.width) x = width;
+    }
 }
-DeathReason deathReason;
+ArrayList<Snake> snakes;
 
 class Land {
     float x, y, width, height;
@@ -122,6 +141,13 @@ class Land {
 }
 ArrayList<Land> lands;
 
+enum DeathReason {
+    DROWNED, 
+    EATEN_BY_SNAKE,
+    RIP
+}
+DeathReason deathReason;
+
 int snakeAnimationFrame = 5; // 动画帧的开始
 int snakeAnimationEndFrame = 60; // 动画帧的结束
 int drownAnimationFrame = 61; // 动画帧的开始
@@ -134,7 +160,7 @@ int lastFrameTime;
 
 boolean debug = false;
 
-float scrollSpeed = 0.4;
+float scrollSpeed = 0.5;
 
 float landY;
 
@@ -148,6 +174,8 @@ void setup() {
     frog = loadImage("assets/frog.png");
     lilyPad = loadImage("assets/lilyPad.png"); // 加载荷叶图像
     fly = loadImage("assets/fly.png"); // 加载蒼蠅图像
+    snake = loadImage("assets/snake.png"); // 加载蛇图像
+    snake_flipped = loadImage("assets/snake_flipped.png"); // 加载蛇图像
     deadIcon = loadImage("assets/dead.png"); // 加载死亡图示
     startScreen = loadImage("assets/start_screen.png");
     ruleScreen = loadImage("assets/rule_screen.png");
@@ -160,6 +188,8 @@ void setup() {
     frog.resize(0, height / 10); // 根据屏幕高度调整青蛙大小
     lilyPad.resize(0, frog.height); // 调整荷叶大小与青蛙高度一致
     fly.resize(0, frog.height / 2); // 根据需要调整蒼蠅大小
+    snake.resize(0, frog.height); // 根据需要调整蛇的大小
+    snake_flipped.resize(0, frog.height); // 根据需要调整蛇的大小
     deadIcon.resize(0, height / 20);
     startScreen.resize(1120, 630);
     ruleScreen.resize(1120, 630);
@@ -236,6 +266,8 @@ void setup() {
         float y = (int)random(height / frog.height + 1) * frog.height + height;
         lands.add(new Land(0, y, width, (int)random(1,5) * frog.height));
     }
+
+    snakes = new ArrayList<Snake>();
 }
 
 void draw() {
@@ -363,7 +395,35 @@ void runGame() {
         if (land.isOffScreen()) {
             land.y = (int)random(10,15) * frog.height + frogY;
             land.height = (int)random(1,5) * frog.height; // 随机生成新的土地
+        }
+        // println(snakes.size());
+        if (snakes.size() < land.height/frog.height*2) { // 10% 的几率在每块土地上生成一条蛇，同时限制蛇的总数
+            float snakeX = random(0, width);
+            float snakeY = random(land.y, land.y+land.height-frog.height); // 蛇应该出现在土地的上方
+            snakes.add(new Snake(snakeX, snakeY, random(1, 4)*(random(1) > 0.5 ? 1 : -1)));
+        }
+    }
+
+    for (Snake snake : snakes) {
+        snake.display();
+        snake.move();
+        if(leaveLand) {
+            snake.y -= scrollSpeed;
+        }
+    }
+
+    // 检查青蛙是否与蛇相撞
+    Iterator<Snake> snakeIterator = snakes.iterator();
+    while (snakeIterator.hasNext()) {
+        Snake snake = snakeIterator.next();
+        if (dist(frogX, frogY, snake.x, snake.y) < frog.width) {
+            // 青蛙与蛇相撞，结束游戏
+            gameState = STATE_GAME_OVER;
+            endGame(DeathReason.EATEN_BY_SNAKE);
             break;
+        }
+        if(snake.y < -10) {
+            snakeIterator.remove();
         }
     }
     
