@@ -399,7 +399,7 @@ void runGame() {
         // println(snakes.size());
         if (snakes.size() < land.height/frog.height*2) { // 10% 的几率在每块土地上生成一条蛇，同时限制蛇的总数
             float snakeX = random(0, width);
-            float snakeY = random(land.y, land.y+land.height-frog.height); // 蛇应该出现在土地的上方
+            float snakeY = land.y+frog.height*(int)random(land.height/frog.height - 1); // 蛇应该出现在土地的上方
             snakes.add(new Snake(snakeX, snakeY, random(1, 4)*(random(1) > 0.5 ? 1 : -1)));
         }
     }
@@ -414,7 +414,7 @@ void runGame() {
 
     // 检查青蛙是否与蛇相撞
     Iterator<Snake> snakeIterator = snakes.iterator();
-    while (snakeIterator.hasNext()) {
+    while (onLand && snakeIterator.hasNext()) {
         Snake snake = snakeIterator.next();
         if (dist(frogX, frogY, snake.x, snake.y) < frog.width) {
             // 青蛙与蛇相撞，结束游戏
