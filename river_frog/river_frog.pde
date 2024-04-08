@@ -97,6 +97,31 @@ enum DeathReason {
 }
 DeathReason deathReason;
 
+class Land {
+    float x, y, width, height;
+
+    Land(float x, float y, float width, float height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    void display() {
+        fill(#86502E); // 土地的颜色
+        rect(x, y, width, height);
+    }
+
+    void move(float speed) {
+        y -= speed; // 向上移动
+    }
+
+    boolean isOffScreen() {
+        return y + height < -10; // 检查土地是否完全离开屏幕
+    }
+}
+ArrayList<Land> lands;
+
 int snakeAnimationFrame = 5; // 动画帧的开始
 int snakeAnimationEndFrame = 60; // 动画帧的结束
 int drownAnimationFrame = 61; // 动画帧的开始
@@ -174,6 +199,7 @@ void setup() {
     jumpdone = false;
     leaveLand = false; 
     jumpInPlace = false;
+    jumpState = 0;
     
     //初始化荷叶的X坐标数组
     lilyRows = new ArrayList[height / frog.height + 1]; // 假设屏幕下半部分是河流
@@ -193,7 +219,7 @@ void setup() {
     
     flies = new ArrayList<Fly>();
     //在适当位置生成蒼蠅
-    for (int i = 0; i < numberOfFlies; i++) { // 生成 10 只蒼蠅
+    for (int i = 0; i < numberOfFlies; i++) { 
         float x = random(width);
         float y = (int)random(height / frog.height + 1) * frog.height + height / 2;
         flies.add(new Fly(x, y));
@@ -203,8 +229,13 @@ void setup() {
     snakeAnimationFrame = 5; // 动画帧的开始
     animationFinished = false;
     
-    scrollSpeed = 0.4;
     landY = height / 2 + frog.height / 2;
+
+    lands = new ArrayList<Land>();
+    for (int i = 0; i < 2; i++) { 
+        float y = (int)random(height / frog.height + 1) * frog.height + height;
+        lands.add(new Land(0, y, width, (int)random(1,5) * frog.height));
+    }
 }
 
 void draw() {
@@ -301,6 +332,9 @@ void runGame() {
         for (Fly fly : flies) {
             fly.y -= scrollSpeed;
         }
+        for (Land land : lands) {
+            land.move(scrollSpeed);
+        }
     } else{
         fill(#86502E);
         rect(0, 0, width, landY); // 绘制青蛙的起始位置
@@ -315,6 +349,21 @@ void runGame() {
                 lily.y -= scrollSpeed;
             lily.move();
             lily.display();
+        }
+    }
+
+    boolean onLand = false;
+    for (Land land : lands) {
+        land.display();
+        // 检查青蛙是否在土地上
+        if (land.y < frogY + frog.height && land.y + land.height >= frogY + frog.height) {
+            onLand = true;
+        }
+        // 如果土地离开屏幕，移除并创建新的土地
+        if (land.isOffScreen()) {
+            land.y = (int)random(10,15) * frog.height + frogY;
+            land.height = (int)random(1,5) * frog.height; // 随机生成新的土地
+            break;
         }
     }
     
@@ -363,25 +412,25 @@ void runGame() {
                 break;
             }
         }
-        if (!onLilyPad) {
+        if (!onLilyPad && !onLand) {
             gameState = STATE_GAME_OVER;
             endGame(DeathReason.DROWNED);
         }
     }
     
     //如果青蛙在荷叶上，让青蛙跟随荷叶移动
-    if(onLilyPad && currentLilyPad != null) {
+    if(onLilyPad && currentLilyPad != null && !onLand) {
         frogIsSafe = true;
         // 青蛙跟随荷叶移动
         frogX += currentLilyPad.speed;
         
         // 检查荷叶是否要离开屏幕
-        if (currentLilyPad.x + lilyPad.width <= 10 || currentLilyPad.x >= width - 10) {
+        if ((currentLilyPad.x + lilyPad.width <= 10 || currentLilyPad.x >= width - 10) && !onLand) {
             gameState = STATE_GAME_OVER;
             endGame(DeathReason.DROWNED);
         }
         
-        if (frogX + frog.width < currentLilyPad.x - 5 || frogX > currentLilyPad.x + lilyPad.width + 5) {
+        if ((frogX + frog.width < currentLilyPad.x - 5 || frogX > currentLilyPad.x + lilyPad.width + 5) && !onLand) {
             gameState = STATE_GAME_OVER;
             endGame(DeathReason.DROWNED);
         }
@@ -463,6 +512,7 @@ void keyPressed() {
     } if (keyCode == BACKSPACE) { 
         debug = !debug;
     } if(keyCode == ENTER & gameState == STATE_START) {
+        setup();
         gameState = STATE_GAME; // 开始游戏
     }
 }
@@ -482,6 +532,7 @@ void mousePressed() {
     if(gameState == STATE_START) {
         if (mouseX >= xStartButton && mouseX <= xEndButton && 
             mouseY >= yStartButton && mouseY <= yEndButton) {
+            setup();
             gameState = STATE_GAME; // 开始游戏
         } else if (mouseX >= xRuleButton && mouseX <= xEndRuleButton && 
             mouseY >= yRuleButton && mouseY <= yEndRuleButton) {
