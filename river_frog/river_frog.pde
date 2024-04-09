@@ -268,6 +268,13 @@ void setup() {
     }
 
     snakes = new ArrayList<Snake>();
+    for (Land land : lands) {
+        for (int i = (int)(land.height/frog.height*3/2); i>0; i--) { // 10% 的几率在每块土地上生成一条蛇，同时限制蛇的总数
+            float snakeX = random(0, width);
+            float snakeY = land.y+frog.height*(int)random(land.height/frog.height - 1)-frog.height/2; // 蛇应该出现在土地的上方
+            snakes.add(new Snake(snakeX, snakeY, random(1, 4)*(random(1) > 0.5 ? 1 : -1)));
+        }
+    }
 }
 
 void draw() {
@@ -355,6 +362,11 @@ void drawDeaths(){
 void runGame() {
     //游戏逻辑
     background(#0D839E);
+    if(frogY < height*3/5) {
+        scrollSpeed = 0.4;
+    } else {
+        scrollSpeed = 4;
+    }
     if (leaveLand) {
         landY -= scrollSpeed; // 河流向上移动
         fill(#86502E);
@@ -388,19 +400,18 @@ void runGame() {
     for (Land land : lands) {
         land.display();
         // 检查青蛙是否在土地上
-        if (land.y < frogY + frog.height && land.y + land.height >= frogY + frog.height) {
+        if (land.y < frogY + frog.height && land.y + land.height >= frogY + frog.height/2) {
             onLand = true;
         }
         // 如果土地离开屏幕，移除并创建新的土地
         if (land.isOffScreen()) {
-            land.y = (int)random(10,15) * frog.height + frogY;
-            land.height = (int)random(1,5) * frog.height; // 随机生成新的土地
-        }
-        // println(snakes.size());
-        if (snakes.size() < land.height/frog.height*2) { // 10% 的几率在每块土地上生成一条蛇，同时限制蛇的总数
-            float snakeX = random(0, width);
-            float snakeY = land.y+frog.height*(int)random(land.height/frog.height - 1); // 蛇应该出现在土地的上方
-            snakes.add(new Snake(snakeX, snakeY, random(1, 4)*(random(1) > 0.5 ? 1 : -1)));
+            land.y = (int)random(10,15) * frog.height + jumpTarget + frog.height/2;
+            land.height = (int)random(1,5) * frog.height; // 随机生成新的土地// println(snakes.size());
+            for (int i = (int)random(land.height/frog.height*0.8, land.height/frog.height*2.5); i>0; i--) { // 10% 的几率在每块土地上生成一条蛇，同时限制蛇的总数
+                float snakeX = random(0, width);
+                float snakeY = land.y+frog.height*(int)random(land.height/frog.height - 0.01)-frog.height/2; // 蛇应该出现在土地的上方
+                snakes.add(new Snake(snakeX, snakeY, random(1, 4)*(random(1) > 0.5 ? 1 : -1)));
+            }
         }
     }
 
@@ -420,6 +431,9 @@ void runGame() {
             // 青蛙与蛇相撞，结束游戏
             gameState = STATE_GAME_OVER;
             endGame(DeathReason.EATEN_BY_SNAKE);
+            if (debug) {
+                println("Eaten by snake");
+            }
             break;
         }
         if(snake.y < -10) {
@@ -475,6 +489,9 @@ void runGame() {
         if (!onLilyPad && !onLand) {
             gameState = STATE_GAME_OVER;
             endGame(DeathReason.DROWNED);
+            if (debug) {
+                println("Drowned because missed lily pad");
+            }
         }
     }
     
@@ -484,15 +501,20 @@ void runGame() {
         // 青蛙跟随荷叶移动
         frogX += currentLilyPad.speed;
         
-        // 检查荷叶是否要离开屏幕
         if ((currentLilyPad.x + lilyPad.width <= 10 || currentLilyPad.x >= width - 10) && !onLand) {
             gameState = STATE_GAME_OVER;
             endGame(DeathReason.DROWNED);
+            if (debug) {
+                println("Drowned because lily pad dissapeared from screen so frog fell");
+            }
         }
         
         if ((frogX + frog.width < currentLilyPad.x - 5 || frogX > currentLilyPad.x + lilyPad.width + 5) && !onLand) {
             gameState = STATE_GAME_OVER;
             endGame(DeathReason.DROWNED);
+            if (debug) {
+                println("Drowned because frog left lily pad");
+            }
         }
     }
     
@@ -530,6 +552,9 @@ void runGame() {
     if (jumpTarget <= -frog.height) {
         gameState = STATE_GAME_OVER;
         endGame(DeathReason.DROWNED);
+        if (debug) {
+            println("Drowned because dissapeared from screen");
+        }
     }
     
     //绘制青蛙
@@ -571,6 +596,8 @@ void keyPressed() {
         jumpInPlace = true;
     } if (keyCode == BACKSPACE) { 
         debug = !debug;
+        deaths = 0;
+        score = 0;
     } if(keyCode == ENTER & gameState == STATE_START) {
         setup();
         gameState = STATE_GAME; // 开始游戏
