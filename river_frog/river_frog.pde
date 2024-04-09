@@ -152,7 +152,7 @@ int snakeAnimationFrame = 5; // 动画帧的开始
 int snakeAnimationEndFrame = 60; // 动画帧的结束
 int drownAnimationFrame = 61; // 动画帧的开始
 int drownAnimationEndFrame = 94; // 动画帧的结束
-int animationFrameRate = 8; // 每秒8帧
+int animationFrameRate = 12;
 int frameCountDown = 0; // 帧计数器
 boolean animationFinished = false; // 动画是否完成的标记
 int animationPauseTime = 1000; // 动画结束后的暂停时间（毫秒）
@@ -693,8 +693,8 @@ void displayDrownAnimation() {
 void displaySnakeAnimation() {
     if(!animationFinished) {
         if (millis() - lastFrameTime > 1000 / animationFrameRate) {
+
             lastFrameTime = millis(); // 重置计时器
-            
             // 加载并显示当前帧
             String imageName = "assets/snake/" + snakeAnimationFrame + ".png";
             PImage currentFrame = loadImage(imageName);
