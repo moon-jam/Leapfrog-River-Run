@@ -452,6 +452,7 @@ void runGame() {
             if (random(100) < 50) newSpeed = -newSpeed; // 随机决定方向
             newRow.add(new LilyPad(newXPosition, newYPosition, newSpeed));
         }
+
         // 移除底部行，将新行添加到顶部
         lilyRows = (ArrayList<LilyPad>[]) append(subset(lilyRows, 1), newRow);
         
@@ -486,6 +487,7 @@ void runGame() {
                 break;
             }
         }
+        
         if (!onLilyPad && !onLand) {
             gameState = STATE_GAME_OVER;
             endGame(DeathReason.DROWNED);
