@@ -487,7 +487,7 @@ void runGame() {
                 break;
             }
         }
-        
+
         if (!onLilyPad && !onLand) {
             gameState = STATE_GAME_OVER;
             endGame(DeathReason.DROWNED);
@@ -570,9 +570,9 @@ void runGame() {
             it.remove();
             score++; // 增加得分
         } else {
-                if(random(0,2)<1)
-                    cur_fly.shake();
-                cur_fly.display();
+            if(random(0,2)<1)
+                cur_fly.shake();
+            cur_fly.display();
         }
     }
 }
